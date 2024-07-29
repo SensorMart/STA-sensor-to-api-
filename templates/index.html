@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sensor Data</title>
+</head>
+<body>
+    <h1>Sensor Data</h1>
+    <div id="data">Waiting for data...</div>
+    <script>
+        var ws = new WebSocket("ws://localhost:8000/ws");
+        ws.onmessage = function(event) {
+            var dataDiv = document.getElementById('data');
+            // Update the content of the counter div with the new message
+            // document.getElementById('counter').textContent = event.data;
+            dataDiv.innerText =event.data;
+        };
+    </script>
+</body>
+</html>
