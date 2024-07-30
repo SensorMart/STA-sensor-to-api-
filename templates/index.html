@@ -10,8 +10,8 @@
         var ws = new WebSocket("ws://localhost:8000/ws");
         ws.onmessage = function(event) {
             var dataDiv = document.getElementById('data');
-            // Update the content of the counter div with the new message
-            // document.getElementById('counter').textContent = event.data;
+            var data = JSON.parse(event.data);
+            var formattedData = 'sr_no: ${data.sr_no} , X: ${data.X}, Y: {data.Y}, Z: {data.Z}'
             dataDiv.innerText =event.data;
         };
     </script>
