@@ -4,25 +4,29 @@ from fastapi.templating import Jinja2Templates
 from sensor_data.data_reader import SensorDataReader
 import asyncio
 import json
+import requests
 
 app = FastAPI()
 templates =  Jinja2Templates(directory= "templates")
 
 #initialize the sensor data reader
-sensor_data_reader = SensorDataReader(port='COM6', baud_rate='115200')
+sensor_data_reader = SensorDataReader(port='COM5', baud_rate='115200',queue_size=1000)
 
 @app.get("/",response_class=HTMLResponse)
 async def get_webpage(request: Request):
     return templates.TemplateResponse("index.html",{"request": request})
 
-@app.websocket("/ws")
+@app.websocket("/ws") 
 async def websocket_endpoint(websocket: WebSocket):
+   
     await websocket.accept()
     while True:
         data = sensor_data_reader.get_data()
-        if data:
-            await websocket.send_text(json.dumps(data[-1])) #sends the latest data points
-        await asyncio.sleep(0.005)
+        
+        if data :
+            # print (f"{data})
+            await websocket.send_text(json.dumps(data)) #sends the latest data points
+        await asyncio.sleep(1)   
 
 @app.get("/data/")
 async def get_data():

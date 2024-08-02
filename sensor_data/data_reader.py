@@ -1,13 +1,55 @@
 import serial
 import threading
-import json
+import time 
 
+class listNode:
+     def __init__(self, val, nxt, prev):
+        self.val = val
+        self.next = nxt
+        self.prev = prev
+
+class MyCircularQueue:
+    def __init__(self, k: int) : #initialise the   object with the size of queue to be k
+            self.space =k #space that is left
+            self.left = listNode(0, None , None)
+            self.right =listNode(0,None,self.left)
+            self.left.next = self.right
+
+    def enQueue(self,value: int) -> bool: #inserts the element into circular queue. return true if the operation  is true
+        if self.space == 0: return False
+        cur = listNode(value , self.right, self.right.prev)
+        self.right.prev.next = cur 
+        self.right.prev = cur
+        self.space -= 1
+        return True
+    
+    def deQueue(self) -> bool:#delete the elemen t from circular queue , return true if operation is sucessful
+        if self.isEmpty(): return False # to make sure it is nbot empty
+        self.left.next = self.left.next.next
+        self.left.next.prev = self.left
+        self.space += 1
+        return True
+    
+    def Front(self) -> int: #get the front item from the queue if the queue is empty , return -1
+        if self.isEmpty(): return -1
+        return self.left.next.val
+
+    def Rear(self) -> int: #get the last item from the queue .if the queue is empty return -1
+         if self.isEmpty(): return -1
+         return self.right.prev.val
+
+    def isEmpty(self) -> bool:  #check wether circulaar queue is empty or not 
+        return  self.left.next == self.right
+    
+    def isFull(self) -> bool: #check wether the circular queue is full or not 
+         return self.space == 0
+              
 class SensorDataReader:
-    def __init__(self, port, baud_rate):
+    def __init__(self, port, baud_rate,queue_size):
         self.port = port
         self.baud_rate = baud_rate
         self.serial_connection = serial.Serial(self.port, self.baud_rate)
-        self.data = []
+        self.data_queue = MyCircularQueue(queue_size)
         self.lock = threading.Lock()
         self.read_thread = threading.Thread(target=self.read_data)
         self.read_thread.start()
@@ -16,8 +58,7 @@ class SensorDataReader:
         while True:
             if self.serial_connection.in_waiting > 0:
                 
-                data_line = self.serial_connection.readline().decode('utf-8')
-                #spliting data in srno,x,y,z
+                data_line = self.serial_connection.readline().decode('utf-8').strip()
                 part = data_line.split(',')
                 if len(part) == 4:
                     data_point = {
@@ -28,11 +69,18 @@ class SensorDataReader:
                     }
                     #to store the data in list
                 with self.lock:
-                    self.data.append(data_point)
-                    #set the limit of ther list
-                    if len(self.data)>1000:
-                        self.data.pop(0)
+                    if self.data_queue.isFull():
+                         self.data_queue.deQueue()
+                    self.data_queue.enQueue(data_point)
+                time.sleep(0.005)
+            
 
     def get_data(self):
         with self.lock:
-            return self.data
+            data_list = []
+            current  = self.data_queue.left.next
+            while current != self.data_queue.right:
+                data_list.append(current.val)
+                current = current.next
+            return data_list
+        
