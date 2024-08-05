@@ -58,7 +58,7 @@ class SensorDataReader:
         while True:
             if self.serial_connection.in_waiting > 0:
                 
-                data_line = self.serial_connection.readline().decode('utf-8').strip()
+                data_line = self.serial_connection.readline().decode('utf-8', errors = 'replace').strip()
                 part = data_line.split(',')
                 if len(part) == 4:
                     data_point = {
@@ -83,4 +83,3 @@ class SensorDataReader:
                 data_list.append(current.val)
                 current = current.next
             return data_list
-        
