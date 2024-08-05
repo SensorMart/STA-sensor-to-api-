@@ -13,7 +13,7 @@ app = FastAPI()
 templates =  Jinja2Templates(directory= "templates")
 
 #initialize the sensor data reader
-sensor_data_reader = SensorDataReader(port='COM5', baud_rate='115200',queue_size=1000)
+sensor_data_reader = SensorDataReader(port='COM5', baud_rate='115200',queue_size=1000, csv_file_prefix= 'sensor_data')
 
 @app.get("/",response_class=HTMLResponse)
 async def get_webpage(request: Request):
