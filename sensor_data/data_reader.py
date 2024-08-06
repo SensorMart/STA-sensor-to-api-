@@ -3,6 +3,10 @@ import threading
 import time 
 import csv
 from queue import Queue
+from file_handler.csv_writer import CSVwriter
+
+
+csv_writer = CSVwriter(file_prefix= 'DATA',max_points=1000)
 
 class listNode:
      def __init__(self, val, nxt, prev):
@@ -47,25 +51,15 @@ class MyCircularQueue:
          return self.space == 0
               
 class SensorDataReader:
-    def __init__(self, port, baud_rate,queue_size,csv_file_prefix):
+    def __init__(self, port, baud_rate,queue_size):
         self.port = port
         self.baud_rate = baud_rate
         self.serial_connection = serial.Serial(self.port, self.baud_rate)
         self.data_queue = MyCircularQueue(queue_size)
         self.lock = threading.Lock()
-        
-        self.csv_file_prefix = csv_file_prefix
-        self.csv_file_index = 0
-        self.csv_file_path = f"{csv_file_prefix}_{self.csv_file_index}.csv" 
-
-        self.csv_writer = csv.DictWriter(open(self.csv_file_path, 'w' , newline=''), fieldnames=["sr_no","X","Y","Z"])
-        self.csv_writer.writeheader()
-
         self.data_queue_to_save = Queue()
         self.read_thread = threading.Thread(target=self.read_data)
-        self.save_thread = threading.Thread(target=self.save_data)
         self.read_thread.start()
-        self.save_thread.start()
 
     def read_data(self):
         while True:
@@ -85,24 +79,9 @@ class SensorDataReader:
                     if self.data_queue.isFull():
                          self.data_queue.deQueue()
                     self.data_queue.enQueue(data_point)
-                self.save_data_to_csv(data_point)
+                csv_writer.save_data(data_point)
             time.sleep(0.005)
 
-    def save_data(self):
-        while True:
-            data_point = self.data_queue_to_save.get()
-            self.save_data_to_csv(data_point)        
-
-    def save_data_to_csv(self, data_point):
-        with open (self.csv_file_path , 'a' , newline ='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=["sr_no","X","Y","Z"])
-            writer.writerow(data_point)
-            if int(data_point["sr_no"]) > 30000 * (self.csv_file_index + 1):
-                self.csv_file_index +=1
-                self.csv_file_path = f"{self.csv_file_path}_{self.csv_file_index}.csv"
-                with open(self.csv_file_path, 'w', newline ='') as new_csvfile:
-                    writer = csv.DictWriter(new_csvfile, fieldnames = ["sr_no","X","Y","Z"])
-                    writer.writeheader()
 
     def get_data(self):
         with self.lock:
@@ -110,5 +89,6 @@ class SensorDataReader:
             current  = self.data_queue.left.next
             while current != self.data_queue.right:
                 data_list.append(current.val)
+                # csv_writer.save_data(data_list)
                 current = current.next
             return data_list

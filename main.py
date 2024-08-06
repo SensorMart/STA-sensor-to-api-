@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sensor_data.data_reader import SensorDataReader
 import asyncio
 import logging
+from file_handler.csv_writer import CSVwriter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -12,8 +13,9 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 templates =  Jinja2Templates(directory= "templates")
 
-#initialize the sensor data reader
-sensor_data_reader = SensorDataReader(port='COM5', baud_rate='115200',queue_size=1000, csv_file_prefix= 'sensor_data')
+#initialize the sensor data reader and CSV writer
+sensor_data_reader = SensorDataReader(port='COM5', baud_rate='115200',queue_size=1000)
+# csv_writer = CSVwriter(file_prefix= 'DATA',max_points=300)
 
 @app.get("/",response_class=HTMLResponse)
 async def get_webpage(request: Request):
@@ -33,10 +35,8 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         logger.error(f"websocket connection error:{e}")
     finally:
-        if not websocket.client.closed:
+        if  websocket.client != True:
             await websocket.close() 
-    
-
 
 @app.get("/data/")
 async def get_data():
@@ -55,6 +55,7 @@ async def update_sensor_data(request: Request):
     # This endpoint can be used to simulate updates or interact with data in other ways
     data = sensor_data_reader.get_data()
     if data:
+        # csv_writer.save_data(data)
         return JSONResponse(content={"data": data})
     else:
         raise HTTPException(status_code=404, detail="No data available")
