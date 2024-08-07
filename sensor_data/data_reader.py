@@ -1,12 +1,8 @@
 import serial
 import threading
 import time 
-import csv
 from queue import Queue
-from file_handler.csv_writer import CSVwriter
 
-
-csv_writer = CSVwriter(file_prefix= 'DATA',max_points=1000)
 
 class listNode:
      def __init__(self, val, nxt, prev):
@@ -79,7 +75,7 @@ class SensorDataReader:
                     if self.data_queue.isFull():
                          self.data_queue.deQueue()
                     self.data_queue.enQueue(data_point)
-                csv_writer.save_data(data_point)
+                # csv_writer.save_data(data_point)
             time.sleep(0.005)
 
 
