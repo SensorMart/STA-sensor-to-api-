@@ -11,16 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 app = FastAPI()
-templates =  Jinja2Templates(directory= "templates")
+templates =  Jinja2Templates(directory= "templates") #this is used to link html page in templates directory
 
 #initialize the sensor data reader
-sensor_data_reader = SensorDataReader(port='COM5', baud_rate='115200',queue_size=1000,csv_filename_prefix="data")
+sensor_data_reader = SensorDataReader(port='COM4', 
+                                      baud_rate='115200',
+                                      queue_size=1000,
+                                      csv_filename_prefix="A",#this will com ein the file saving prefix
+                                      sr_no_limit=100)#change here for the limit of the serial  number
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup event: Start the data reading threads
     sensor_data_reader.read_thread.start()
-    sensor_data_reader.write_thread.start()
     yield
     # Shutdown event: Ensure proper shutdown of threads and closing of CSV file
     sensor_data_reader.stop()
@@ -34,11 +37,11 @@ async def get_webpage(request: Request):
     return templates.TemplateResponse("index.html",{"request": request})
 
 @app.websocket("/ws") 
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket):#function to make the websocket is initiated
     await websocket.accept()
     try:
         while True:
-            data = sensor_data_reader.get_data()       
+            data = sensor_data_reader.get_data() #takes the data directly from sensor reader      
             if data :
                 await websocket.send_json(data) #sends the latest data points
             await asyncio.sleep(0.005)
@@ -52,7 +55,7 @@ async def websocket_endpoint(websocket: WebSocket):
     
 
 
-@app.get("/data/")
+@app.get("/data/")  #this is the route where the data points can beseen in json format 
 async def get_data():
     try: 
         data = sensor_data_reader.get_data()
@@ -64,9 +67,8 @@ async def get_data():
         logger.error(f"Error retriving data: {e}")
         raise HTTPException(status_code=500, detail="internal server error")
         
-@app.post("/data/")
+@app.post("/data/")    # This endpoint can be used to simulate updates or interact with data in other ways
 async def update_sensor_data(request: Request):
-    # This endpoint can be used to simulate updates or interact with data in other ways
     data = sensor_data_reader.get_data()
     if data:
         return JSONResponse(content={"data": data})
