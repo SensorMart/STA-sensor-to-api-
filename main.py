@@ -17,7 +17,7 @@ templates =  Jinja2Templates(directory= "templates") #this is used to link html 
 sensor_data_reader = SensorDataReader(port='COM4', 
                                       baud_rate='115200',
                                       queue_size=1000,
-                                      csv_filename_prefix="A",#this will com ein the file saving prefix
+                                      csv_filename_prefix=" ",#this will come in the file saving prefix
                                       sr_no_limit=100)#change here for the limit of the serial  number
 
 @asynccontextmanager
@@ -52,6 +52,7 @@ async def websocket_endpoint(websocket: WebSocket):#function to make the websock
     finally:
         if not websocket.client.closed:
             await websocket.close() 
+            
     
 
 
